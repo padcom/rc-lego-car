@@ -5,6 +5,7 @@
 #include "Servo.h"
 #include "Button.h"
 #include "HttpServer.h"
+#include "MimeType.h"
 
 Config config("rclc");
 Network network(config);
@@ -16,15 +17,15 @@ Servo s1;
 Servo s2;
 HttpServer http(80);
 
-void handleRoot(HttpRequest &request, HttpResponse &response) {
+void handleApiGet(HttpRequest &request, HttpResponse &response) {
   response.status(200, "OK - root handler");
   response.header("Content-Type", "text/plain");
   response.beginBody();
-  response.printf("test = %s, a = %s", request.getQueryStringParam("test").c_str(), request.getQueryStringParam("a").c_str());
+  response.printf("test.html: %s\ntest.css: %s\ntest.js: %s\n\n", getMimeType("test.html").c_str(), getMimeType("test.css").c_str(), getMimeType("test.js").c_str());
   response.endBody();
 }
 
-void handlePostToRoot(HttpRequest &request, HttpResponse &response) {
+void handleApiPost(HttpRequest &request, HttpResponse &response) {
   response.status(200, "OK");
   response.header("Content-Type", request.getHeader("Content-Type"));
   response.header("Content-Length", request.getHeader("Content-Length", "0"));
@@ -46,10 +47,12 @@ void setup() {
   s1.attach(D0);
   s2.attach(D5);
 
-  http.registerHandler("GET", "/", handleRoot);
-  http.registerHandler("POST", "/", handlePostToRoot);
+  http.registerHandler("GET", "/api/test", handleApiGet);
+  http.registerHandler("POST", "/api/test", handleApiPost);
   http.begin();
 }
+
+long ts = millis();
 
 void loop() {
   if (s1left.pressed()) {
@@ -73,6 +76,12 @@ void loop() {
     Status.off();
   }
 
+  if (millis() - ts > 1000) {
+    ts = millis();
+    Serial.print("HEAP=");
+    Serial.println(ESP.getFreeHeap());
+  }
+
   http.run();
-  // network.run();
+  network.run();
 }
