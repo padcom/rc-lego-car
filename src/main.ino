@@ -16,20 +16,11 @@ Servo s1;
 Servo s2;
 HttpServer http(80);
 
-void dump(String name, String value) {
-  Serial.println("name=" + name + "; value=" + value);
-}
-
 void handleRoot(HttpRequest &request, HttpResponse &response) {
-  Serial.println("Root path handler");
-  Serial.println("HEADER 'Host': " + request.getHeaders()->get("Host"));
-  request.getHeaders()->forEach(dump);
-  Serial.println("QUERY STRING PARAM 'test': " + request.getQueryStringParams()->get("test"));
-  request.getQueryStringParams()->forEach(dump);
-  response.status(200, "In root handler!");
+  response.status(200, "OK - root handler");
   response.header("Content-Type", "text/plain");
   response.beginBody();
-  response.println("Hello, world! from root handler :)");
+  response.printf("test = %s, a = %s", request.getQueryStringParam("test").c_str(), request.getQueryStringParam("a").c_str());
   response.endBody();
 }
 

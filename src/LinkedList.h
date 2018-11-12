@@ -3,8 +3,6 @@
 
 #include <Arduino.h>
 
-extern int ll_index;
-
 template <typename Type> struct LinkedListEntry {
   String key;
   Type data;
@@ -25,10 +23,8 @@ template <typename Type> class LinkedList {
     void append(String key, Type data) {
       LinkedListEntry<Type> **current = &entries;
       while (*current != 0) {
-        Serial.print("LinkedList.append - next");
         current = &(*current)->next;
       }
-      Serial.println("LinkedList.append - adding new entry: " + key);
       *current = new LinkedListEntry<Type>;
       (*current)->key = key;
       (*current)->data = data;
@@ -36,24 +32,16 @@ template <typename Type> class LinkedList {
     }
 
     virtual Type get(String key, Type def) {
-      if (entries == 0) {
-        Serial.println("No entries defined");
-      } else {
-        Serial.println("Entries have items defined");
-      }
       LinkedListEntry<Type> *current = entries;
       while ((current != 0) && (current->key.compareTo(key) != 0)) {
-        Serial.println("LinkedList.get: " + key + " not matched against '" + current->key + "'- next");
         current = current->next;
       }
-      Serial.println("LinkedList.get: " + key + " end = " + (current == 0));
       return current != 0 ? current->data : def;
     }
 
     void forEach(void(*callback)(String key, Type data)) {
       LinkedListEntry<Type> *current = entries;
       while (current != 0) {
-        Serial.println("LinkedList.forEach");
         callback(current->key, current->data);
         current = current->next;
       }

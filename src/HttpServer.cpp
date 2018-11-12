@@ -5,7 +5,6 @@ HttpServer::HttpServer(uint16_t port) {
 }
 
 HttpServer::~HttpServer() {
-  Serial.println("HttpServer::~HttpServer");
   delete this->server;
 }
 

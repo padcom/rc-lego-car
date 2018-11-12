@@ -49,40 +49,25 @@ void HttpRequest::parse() {
 
 void HttpRequest::parseStatusLine() {
   String request = client->readStringUntil('\r');
-  Serial.println("Request: " + request);
 
   int methodDelimiter = request.indexOf(' ');
   int protocolDelimiter = request.lastIndexOf(' ');
 
-  Serial.print("methodDelimiter: ");
-  Serial.println(methodDelimiter);
-  Serial.print("protocolDelimiter: ");
-  Serial.println(protocolDelimiter);
-
   method = request.substring(0, methodDelimiter);
-  Serial.println("method: '" + method + "'");
-
   path = request.substring(methodDelimiter + 1, protocolDelimiter);
-  Serial.println("path: '" + path + "'");
-
   protocol = request.substring(protocolDelimiter + 1, request.length());
-  Serial.println("protocol: '" + protocol + "'");
 }
 
 void HttpRequest::parseHeaders() {
   do {
     String header = client->readStringUntil('\r');
-    Serial.println("HEADER: '" + header + "'");
     if (header.startsWith("\n")) {
-      Serial.println("Header starts with a new line - trimming...");
       header.remove(0, 1);
-      Serial.println("HEADER: '" + header + "'");
     }
     int delimiter = header.indexOf(": ");
     if (delimiter >= 0) {
       String name = header.substring(0, delimiter);
       String value = header.substring(delimiter + 2, header.length());
-      Serial.println("Header '" + name + "'='" + value + "'");
       headers.append(name, value);
     } else {
       break;
@@ -92,22 +77,15 @@ void HttpRequest::parseHeaders() {
 
 void HttpRequest::parseQueryStringParams() {
   int index = path.indexOf("?");
-  if (index == -1) {
-    Serial.println("No query string parameters found");
-    return;
-  }
+  if (index == -1) return;
   String all = path.substring(index + 1);
-  Serial.println("All query string parameters: " + all);
   path.remove(index);
-  Serial.println("Path after removal of query string parameters: " + path);
   do {
     index = all.indexOf("&");
     String param;
     if (index >= 0) {
       param = all.substring(0, index);
-      Serial.println("param after extraction: " + param);
       all.remove(0, index + 1);
-      Serial.println("all after extraction: " + all);
     } else {
       param = all;
       all = "";
@@ -117,9 +95,7 @@ void HttpRequest::parseQueryStringParams() {
     String value;
     if (index >= 0) {
       name = param.substring(0, index);
-      Serial.println("Param name: " + name);
       value = param.substring(index + 1, param.length());
-      Serial.println("Param value: " + value);
     } else {
       name = param;
       value = "";
@@ -131,8 +107,6 @@ void HttpRequest::parseQueryStringParams() {
 void HttpRequest::parseBody() {
   client->read();
   int contentLength = atoi(headers.get("Content-Length", "-1").c_str());
-  Serial.print("Content length: ");
-  Serial.println(contentLength);
   if (contentLength == -1) {
     body = "";
   } else {
@@ -140,6 +114,5 @@ void HttpRequest::parseBody() {
     memset(buffer, 0, contentLength + 1);
     client->readBytes(buffer, contentLength);
     body = String(buffer);
-    Serial.println("Body: " + body);
   }
 }
