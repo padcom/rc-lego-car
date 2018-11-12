@@ -21,26 +21,30 @@ String HttpRequest::getProtocol() {
   return this->protocol;
 }
 
-String HttpRequest::getHeader(String name) {
-  return this->headers.get(name);
+String HttpRequest::getHeader(String name, String def) {
+  return this->headers.get(name, def);
 }
 
 HttpRequestHeaders *HttpRequest::getHeaders() {
   return &this->headers;
 }
 
-String HttpRequest::getQueryStringParam(String name) {
-  return this->params.get(name);
+String HttpRequest::getQueryStringParam(String name, String def) {
+  return this->params.get(name, def);
 }
 
 HttpRequestQueryStringParams *HttpRequest::getQueryStringParams() {
   return &this->params;
 }
 
+String HttpRequest::getBody() {
+  return body;
+}
 void HttpRequest::parse() {
   parseStatusLine();
   parseHeaders();
   parseQueryStringParams();
+  parseBody();
 }
 
 void HttpRequest::parseStatusLine() {
@@ -122,4 +126,20 @@ void HttpRequest::parseQueryStringParams() {
     }
     params.append(name, value);
   } while (all.length() > 0);
+}
+
+void HttpRequest::parseBody() {
+  client->read();
+  int contentLength = atoi(headers.get("Content-Length", "-1").c_str());
+  Serial.print("Content length: ");
+  Serial.println(contentLength);
+  if (contentLength == -1) {
+    body = "";
+  } else {
+    char buffer[contentLength + 1];
+    memset(buffer, 0, contentLength + 1);
+    client->readBytes(buffer, contentLength);
+    body = String(buffer);
+    Serial.println("Body: " + body);
+  }
 }

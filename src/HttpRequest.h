@@ -6,15 +6,15 @@
 
 class HttpRequestHeaders : public LinkedList<String> {
   public:
-    String get(String name) {
-      return LinkedList::get(name, "");
+    String get(String name, String def = "") {
+      return LinkedList::get(name, def);
     }
 };
 
 class HttpRequestQueryStringParams : public LinkedList<String> {
   public:
-    String get(String name) {
-      return LinkedList::get(name, "");
+    String get(String name, String def = "") {
+      return LinkedList::get(name, def);
     }
 };
 
@@ -25,10 +25,11 @@ class HttpRequest {
     String getMethod();
     String getPath();
     String getProtocol();
-    String getHeader(String name);
+    String getHeader(String name, String def = "");
     HttpRequestHeaders *getHeaders();
-    String getQueryStringParam(String name);
+    String getQueryStringParam(String name, String def = "");
     HttpRequestQueryStringParams *getQueryStringParams();
+    String getBody();
   private:
     WiFiClient *client;
     String method;
@@ -36,10 +37,12 @@ class HttpRequest {
     String protocol;
     HttpRequestHeaders headers;
     HttpRequestQueryStringParams params;
+    String body;
     void parse();
     void parseStatusLine();
     void parseHeaders();
     void parseQueryStringParams();
+    void parseBody();
 };
 
 #endif

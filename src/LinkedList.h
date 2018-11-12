@@ -43,7 +43,7 @@ template <typename Type> class LinkedList {
       }
       LinkedListEntry<Type> *current = entries;
       while ((current != 0) && (current->key.compareTo(key) != 0)) {
-        Serial.println("LinkedList.get: " + key + " not matched - next");
+        Serial.println("LinkedList.get: " + key + " not matched against '" + current->key + "'- next");
         current = current->next;
       }
       Serial.println("LinkedList.get: " + key + " end = " + (current == 0));

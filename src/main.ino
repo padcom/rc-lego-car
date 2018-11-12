@@ -33,6 +33,15 @@ void handleRoot(HttpRequest &request, HttpResponse &response) {
   response.endBody();
 }
 
+void handlePostToRoot(HttpRequest &request, HttpResponse &response) {
+  response.status(200, "OK");
+  response.header("Content-Type", request.getHeader("Content-Type"));
+  response.header("Content-Length", request.getHeader("Content-Length", "0"));
+  response.beginBody();
+  response.print(request.getBody());
+  response.endBody();
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
@@ -47,6 +56,7 @@ void setup() {
   s2.attach(D5);
 
   http.registerHandler("GET", "/", handleRoot);
+  http.registerHandler("POST", "/", handlePostToRoot);
   http.begin();
 }
 

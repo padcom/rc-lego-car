@@ -33,8 +33,6 @@ void HttpResponse::beginBody() {
 }
 
 void HttpResponse::endBody() {
-  client->println();
-  client->println();
   bodySent = true;
 }
 
