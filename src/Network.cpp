@@ -2,7 +2,7 @@
 #include "Network.h"
 #include "SysLog.h"
 
-#define CONFIG_PIN  13
+#define CONFIG_PIN  D2 //13
 
 Network::Network(Config &config) {
   this->config = &config;
