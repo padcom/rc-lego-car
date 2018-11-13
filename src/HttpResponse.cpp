@@ -55,3 +55,7 @@ size_t HttpResponse::write(const uint8_t *buffer, size_t size) {
 void HttpResponse::flush() {
   client->flush();
 }
+
+bool HttpResponse::completed() {
+  return statusSent && headersSent && bodySent;
+}

@@ -13,6 +13,7 @@ class HttpResponse : public Print {
     size_t write(uint8_t byte);
     size_t write(const uint8_t *buffer, size_t size);
     void flush();
+    bool completed();
   private:
     WiFiClient *client;
     bool statusSent = false;
