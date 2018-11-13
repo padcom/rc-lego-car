@@ -55,7 +55,7 @@ void setup() {
   http.begin();
 }
 
-long ts = millis();
+// long ts = millis();
 
 void loop() {
   if (s1left.pressed()) {
@@ -79,11 +79,11 @@ void loop() {
     Status.off();
   }
 
-  if (millis() - ts > 1000) {
-    ts = millis();
-    Serial.print("HEAP=");
-    Serial.println(ESP.getFreeHeap());
-  }
+  // if (millis() - ts > 1000) {
+  //   ts = millis();
+  //   Serial.print("HEAP=");
+  //   Serial.println(ESP.getFreeHeap());
+  // }
 
   http.run();
   network.run();
