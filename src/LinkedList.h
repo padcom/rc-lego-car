@@ -47,7 +47,6 @@ template <typename Type> class LinkedList {
       }
     }
   private:
-    int index;
     LinkedListEntry<Type> *entries = 0;
 };
 
