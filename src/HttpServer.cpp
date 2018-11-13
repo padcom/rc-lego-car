@@ -17,7 +17,7 @@ void HttpServer::begin() {
   SPIFFS.begin();
 }
 
-void HttpServer::registerHandler(String method, String path, PathHandler handler) {
+void HttpServer::registerHandler(String method, String path, HttpRequestPathHandler handler) {
   handlers.append(method + " " + path, handler);
 }
 
@@ -57,7 +57,7 @@ void HttpServer::run() {
   WiFiClient client = server->available();
   if (client) {
     HttpRequest request(client, defaultPage);
-    PathHandler handler = handlers.get(request.getMethod() + " " + request.getPath(), defaultRequestHandler);
+    HttpRequestPathHandler handler = handlers.get(request.getMethod() + " " + request.getPath(), defaultRequestHandler);
     HttpResponse response(client);
     handler(request, response);
     if (!response.completed()) {

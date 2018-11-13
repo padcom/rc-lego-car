@@ -6,19 +6,19 @@
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 
-typedef void (*PathHandler)(HttpRequest &request, HttpResponse &response);
+typedef void (*HttpRequestPathHandler)(HttpRequest &request, HttpResponse &response);
 
 class HttpServer {
   public:
     HttpServer(uint16_t port, String defaultPage = "index.html");
     ~HttpServer();
     void begin();
-    void registerHandler(String method, String path, PathHandler handler);
+    void registerHandler(String method, String path, HttpRequestPathHandler handler);
     void run();
   private:
     WiFiServer *server;
     String defaultPage;
-    LinkedList<PathHandler> handlers;
+    LinkedList<HttpRequestPathHandler> handlers;
 };
 
 #endif
