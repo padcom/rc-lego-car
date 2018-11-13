@@ -7,6 +7,7 @@ HttpServer::HttpServer(uint16_t port) {
 }
 
 HttpServer::~HttpServer() {
+  this->server->stop();
   delete this->server;
 }
 
