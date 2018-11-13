@@ -17,7 +17,7 @@ void HttpServer::begin() {
   SPIFFS.begin();
 }
 
-void HttpServer::registerHandler(String method, String path, HttpRequestPathHandler handler) {
+void HttpServer::on(String method, String path, HttpRequestPathHandler handler) {
   handlers.append(method + " " + path, handler);
 }
 

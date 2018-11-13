@@ -50,8 +50,8 @@ void setup() {
   s1.attach(D0);
   s2.attach(D5);
 
-  http.registerHandler("GET", "/api/test", handleApiGet);
-  http.registerHandler("POST", "/api/test", handleApiPost);
+  http.on("GET", "/api/test", handleApiGet);
+  http.on("POST", "/api/test", handleApiPost);
   http.begin();
 }
 

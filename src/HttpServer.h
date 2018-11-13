@@ -13,7 +13,7 @@ class HttpServer {
     HttpServer(uint16_t port, String defaultPage = "index.html");
     ~HttpServer();
     void begin();
-    void registerHandler(String method, String path, HttpRequestPathHandler handler);
+    void on(String method, String path, HttpRequestPathHandler handler);
     void run();
   private:
     WiFiServer *server;
