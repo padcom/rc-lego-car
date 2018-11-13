@@ -20,10 +20,11 @@ class HttpRequestQueryStringParams : public LinkedList<String> {
 
 class HttpRequest {
   public:
-    HttpRequest(WiFiClient &client);
+    HttpRequest(WiFiClient &client, String defaultPage);
     IPAddress getOrigin();
     String getMethod();
     String getPath();
+    String getDefaultPage();
     String getProtocol();
     String getHeader(String name, String def = "");
     HttpRequestHeaders *getHeaders();
@@ -34,6 +35,7 @@ class HttpRequest {
     WiFiClient *client;
     String method;
     String path;
+    String defaultPage;
     String protocol;
     HttpRequestHeaders headers;
     HttpRequestQueryStringParams params;

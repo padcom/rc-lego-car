@@ -15,7 +15,7 @@ Button s2left(D3);
 Button s2right(D4);
 Servo s1;
 Servo s2;
-HttpServer http(80);
+HttpServer http(80, "/index.html");
 
 void handleApiGet(HttpRequest &request, HttpResponse &response) {
   response.status(200, "OK - root handler");

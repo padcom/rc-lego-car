@@ -10,13 +10,14 @@ typedef void (*PathHandler)(HttpRequest &request, HttpResponse &response);
 
 class HttpServer {
   public:
-    HttpServer(uint16_t port);
+    HttpServer(uint16_t port, String defaultPage = "index.html");
     ~HttpServer();
     void begin();
     void registerHandler(String method, String path, PathHandler handler);
     void run();
   private:
     WiFiServer *server;
+    String defaultPage;
     LinkedList<PathHandler> handlers;
 };
 

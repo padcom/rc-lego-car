@@ -1,7 +1,8 @@
 #include "HttpRequest.h"
 
-HttpRequest::HttpRequest(WiFiClient &client) {
+HttpRequest::HttpRequest(WiFiClient &client, String defaultPage) {
   this->client = &client;
+  this->defaultPage = defaultPage;
   parse();
 }
 
@@ -15,6 +16,10 @@ String HttpRequest::getMethod() {
 
 String HttpRequest::getPath() {
   return this->path;
+}
+
+String HttpRequest::getDefaultPage() {
+  return this->defaultPage;
 }
 
 String HttpRequest::getProtocol() {

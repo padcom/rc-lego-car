@@ -2,8 +2,9 @@
 #include "HttpServer.h"
 #include "MimeType.h"
 
-HttpServer::HttpServer(uint16_t port) {
+HttpServer::HttpServer(uint16_t port, String defaultPage) {
   this->server = new WiFiServer(port);
+  this->defaultPage = defaultPage;
 }
 
 HttpServer::~HttpServer() {
@@ -41,11 +42,12 @@ void respondWith404(HttpRequest &request, HttpResponse &response) {
   response.header("Content-Type", "text/plain");
   response.beginBody();
   response.printf("%s %s not found\n", request.getMethod().c_str(), request.getPath().c_str());
+  response.endBody();
 }
 
 void defaultRequestHandler(HttpRequest &request, HttpResponse &response) {
-  String path = request.getPath() == "/" ? "/index.html" : request.getPath();
-  if (SPIFFS.exists(path)) {
+  String path = request.getPath() == "/" ? request.getDefaultPage() : request.getPath();
+  if (request.getMethod().equals("GET") && SPIFFS.exists(path)) {
     respondWithFile(path, response);
   } else {
     respondWith404(request, response);
@@ -55,9 +57,13 @@ void defaultRequestHandler(HttpRequest &request, HttpResponse &response) {
 void HttpServer::run() {
   WiFiClient client = server->available();
   if (client) {
-    HttpRequest request(client);
+    HttpRequest request(client, defaultPage);
     PathHandler handler = handlers.get(request.getMethod() + " " + request.getPath(), defaultRequestHandler);
     HttpResponse response(client);
     handler(request, response);
+    if (!response.completed()) {
+      Serial.printf("WARNING: response to %s %s not properly completed!\n",
+        request.getMethod().c_str(), request.getPath().c_str());
+    }
   }
 }
