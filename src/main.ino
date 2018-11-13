@@ -21,7 +21,10 @@ void handleApiGet(HttpRequest &request, HttpResponse &response) {
   response.status(200, "OK - root handler");
   response.header("Content-Type", "text/plain");
   response.beginBody();
-  response.printf("test.html: %s\ntest.css: %s\ntest.js: %s\n\n", getMimeType("test.html").c_str(), getMimeType("test.css").c_str(), getMimeType("test.js").c_str());
+  response.printf("test.html: %s\ntest.css: %s\ntest.js: %s\n",
+    getMimeType("test.html").c_str(),
+    getMimeType("test.css").c_str(),
+    getMimeType("test.js").c_str());
   response.endBody();
 }
 
