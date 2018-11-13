@@ -14,8 +14,7 @@ HttpServer::~HttpServer() {
 
 void HttpServer::begin() {
   server->begin();
-  Serial.print("SPIFFS.begin() = ");
-  Serial.println(SPIFFS.begin());
+  SPIFFS.begin();
 }
 
 void HttpServer::registerHandler(String method, String path, PathHandler handler) {
