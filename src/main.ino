@@ -4,8 +4,9 @@
 #include "StatusIndicator.h"
 #include "Servo.h"
 #include "Button.h"
-#include "HttpServer.h"
-#include "MimeType.h"
+#include <FS.h>
+#include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
 
 Config config("rclc");
 Network network(config);
@@ -15,27 +16,7 @@ Button s2left(D3);
 Button s2right(D4);
 Servo s1;
 Servo s2;
-HttpServer http(80, "/index.html");
-
-void handleApiGet(HttpRequest &request, HttpResponse &response) {
-  response.status(200, "OK - root handler");
-  response.header("Content-Type", "text/plain");
-  response.beginBody();
-  response.printf("test.html: %s\ntest.css: %s\ntest.js: %s\n",
-    getMimeType("test.html").c_str(),
-    getMimeType("test.css").c_str(),
-    getMimeType("test.js").c_str());
-  response.endBody();
-}
-
-void handleApiPost(HttpRequest &request, HttpResponse &response) {
-  response.status(200, "OK");
-  response.header("Content-Type", request.getHeader("Content-Type"));
-  response.header("Content-Length", request.getHeader("Content-Length", "0"));
-  response.beginBody();
-  response.print(request.getBody());
-  response.endBody();
-}
+ESP8266WebServer server(80);
 
 void setup() {
   Serial.begin(115200);
@@ -50,9 +31,75 @@ void setup() {
   s1.attach(D0);
   s2.attach(D5);
 
-  http.on("GET", "/api/test", handleApiGet);
-  http.on("POST", "/api/test", handleApiPost);
-  http.begin();
+  SPIFFS.begin();
+  FSInfo info;
+  if (SPIFFS.info(info)) {
+    Serial.print("SPIFFS: totalBytes = "); Serial.println(info.totalBytes);
+    Serial.print("SPIFFS: usedBytes  = "); Serial.println(info.usedBytes);
+  } else {
+    Serial.println("SPIFFS: error - cannot read filesystem information");
+  }
+
+  // handle captive portal to enable configuration over wifi
+  server.on("/hotspot-detect.html", HTTP_GET, []() {
+    server.sendHeader("Location", String("/cp/"), true);
+    server.send(302, "text/plain", "Redirecting to captive portal");
+  });
+
+  // API
+  server.on("/api/reset", HTTP_GET, []() {
+    server.send(200, "text/plain", "Restarting...");
+    server.handleClient();
+    delay(1000);
+    ESP.reset();
+  });
+  server.on("/api/config", HTTP_GET, []() {
+    StaticJsonBuffer<500> jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["ssid"] = config.getWifiSsid();
+    json["passwd"] = config.getWifiPassword();
+    json["ip"] = config.getLocalIP().toString();
+    json["netmask"] = config.getNetmask().toString();
+    json["gateway"] = config.getGatewayIP().toString();
+    json["dns"] = config.getDNSServerIP().toString();
+    json["syslogh"] = config.getSyslogHost().toString();
+    json["syslogp"] = config.getSyslogPort();
+    json["mqtt"] = "192.168.32.2";
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    String response;
+    json.prettyPrintTo(response);
+    server.send(200, "application/json", response);
+  });
+  server.on("/api/config", HTTP_OPTIONS, []() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Credentials", "false");
+    server.sendHeader("Access-Control-Allow-Headers", "X-Requested-With,Content-Type");
+    server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    server.send(204);
+  });
+  server.on("/api/config", HTTP_POST, []() {
+    StaticJsonBuffer<500> jsonBuffer;
+    JsonObject& json = jsonBuffer.parse(server.arg("plain"));
+    String data;
+    json.prettyPrintTo(Serial);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/api/heap", HTTP_GET, []() {
+    server.send(200, "text/plain", String(ESP.getFreeHeap()));
+  });
+  server.on("/api/test", HTTP_GET, []() {
+    server.send(200, "text/plain", "test = " + server.arg("test") + "\n");
+  });
+
+  // Default handlers
+  server.serveStatic("/", SPIFFS, "/");
+  server.onNotFound([]() {
+    server.send(200, "text/plain", String(server.method()) + " " + server.uri() + " not found\n");
+  });
+
+  // Start the web server
+  server.begin();
 }
 
 // long ts = millis();
@@ -85,6 +132,6 @@ void loop() {
   //   Serial.println(ESP.getFreeHeap());
   // }
 
-  http.run();
   network.run();
+  server.handleClient();
 }

@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <IPAddress.h>
 #include <EEPROM.h>
 #include "Config.h"
@@ -34,31 +35,10 @@ Config::Config(String appName) {
 void Config::begin() {
   readDataFromEEPROM();
   if (data.localIP[0] == 255) purge();
-
-  this->localIP = new WiFiManagerParameter("local-ip", "Local IP", data.localIP, IP_MAX_LENGTH);
-  this->netmask = new WiFiManagerParameter("netmask", "Netmask", data.netmask, IP_MAX_LENGTH);
-  this->gatewayIP = new WiFiManagerParameter("gateway-ip", "Gateway IP", data.gatewayIP, IP_MAX_LENGTH);
-  this->syslogHost = new WiFiManagerParameter("syslogh", "Syslog host", data.syslogHost, HOSTNAME_MAX_LENGTH);
-  this->syslogPort = new WiFiManagerParameter("syslogp", "Syslog port", data.syslogPort, PORT_MAX_LENGTH);
-}
-
-void Config::configure(WiFiManager &manager) {
-  manager.addParameter(localIP);
-  manager.addParameter(netmask);
-  manager.addParameter(gatewayIP);
-  manager.addParameter(syslogHost);
-  manager.addParameter(syslogPort);
 }
 
 void Config::save() {
   SysLog.log("CONFIG Saving edited values");
-
-  strncpy(data.localIP, localIP->getValue(), localIP->getValueLength());
-  strncpy(data.netmask, netmask->getValue(), netmask->getValueLength());
-  strncpy(data.gatewayIP, gatewayIP->getValue(), gatewayIP->getValueLength());
-  strncpy(data.syslogHost, syslogHost->getValue(), syslogHost->getValueLength());
-  strncpy(data.syslogPort, syslogPort->getValue(), syslogPort->getValueLength());
-
   saveDataToEEPROM();
 }
 
@@ -82,10 +62,36 @@ String Config::getHardwareId() {
   return appName + "-" + String(ESP.getChipId());
 }
 
+String Config::getWifiSsid() {
+  return "padcom";
+}
+
+String Config::getWifiPassword() {
+  return "siusiak13";
+}
+
+IPAddress strtoip(String ip) {
+  IPAddress result;
+  result.fromString(ip);
+  return result;
+}
+
 IPAddress strtoip(char *ip) {
   IPAddress result;
   result.fromString(ip);
   return result;
+}
+
+IPAddress Config::getAPLocalIP() {
+  return strtoip(String("192.168.4.1"));
+}
+
+IPAddress Config::getAPNetmask() {
+  return strtoip(String("255.255.255.0"));
+}
+
+IPAddress Config::getAPGatewayIP() {
+  return strtoip(String("192.168.4.1"));
 }
 
 IPAddress Config::getLocalIP() {
@@ -98,6 +104,10 @@ IPAddress Config::getNetmask() {
 
 IPAddress Config::getGatewayIP() {
   return strtoip(data.gatewayIP);
+}
+
+IPAddress Config::getDNSServerIP() {
+  return strtoip(String("8.8.8.8"));
 }
 
 IPAddress Config::getSyslogHost() {
