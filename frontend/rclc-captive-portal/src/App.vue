@@ -8,6 +8,7 @@
     <p>
       <button @click="save">Save</button>
     </p>
+    <h3>{{ status }}</h3>
   </div>
 </template>
 
@@ -16,22 +17,29 @@ export default {
   data () {
     return {
       config: {},
+      status: "",
     }
   },
   mounted () {
-    fetch("http://192.168.32.80/api/config")
+    fetch("/api/config")
       .then(response => response.json())
       .then(data => { this.config = data })
   },
   methods: {
     save () {
-      fetch("http://192.168.32.80/api/config", {
+      this.status = "Saving values and connecting to wifi...";
+      fetch("/api/config", {
         method: "POST",
         body: JSON.stringify(this.config),
         headers: {
           "Content-Type": "application/json",
         },
       })
+      setTimeout(() => {
+        fetch("/api/connected")
+          .then(response => response.text()) 
+          .then(status => { this.status = status });
+      }, 5000);
     }
   }
 }

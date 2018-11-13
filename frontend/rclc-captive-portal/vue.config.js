@@ -4,4 +4,11 @@ module.exports = {
   filenameHashing: false,
   indexPath: 'index.htm',
   productionSourceMap: false,
+  devServer: {
+    proxy: {
+      "/api": {
+        target: "http://192.168.32.80/"
+      }
+    }
+  }
 }

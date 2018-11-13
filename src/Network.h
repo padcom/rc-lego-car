@@ -12,12 +12,14 @@ class Network {
     void begin();
     void run();
     void enableDebug();
+    bool connectWiFi();
   private:
     bool debug = false;
+    bool isConnecting = false;
     Config *config;
     DNSServer *dns;
     bool shouldEnterConfigMode();
-    void connectWiFi();
+    void startAP();
 };
 
 #endif

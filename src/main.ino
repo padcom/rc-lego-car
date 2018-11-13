@@ -42,18 +42,21 @@ void setup() {
 
   // handle captive portal to enable configuration over wifi
   server.on("/hotspot-detect.html", HTTP_GET, []() {
+    Serial.println("GET /hotspot-detect.html");
     server.sendHeader("Location", String("/cp/"), true);
     server.send(302, "text/plain", "Redirecting to captive portal");
   });
 
   // API
-  server.on("/api/reset", HTTP_GET, []() {
+  server.on("/api/reset", HTTP_POST, []() {
+    Serial.println("POST /api/reset");
     server.send(200, "text/plain", "Restarting...");
     server.handleClient();
     delay(1000);
     ESP.reset();
   });
   server.on("/api/config", HTTP_GET, []() {
+    Serial.println("GET /api/config");
     StaticJsonBuffer<500> jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
     json["ssid"] = config.getWifiSsid();
@@ -65,30 +68,58 @@ void setup() {
     json["syslogh"] = config.getSyslogHost().toString();
     json["syslogp"] = config.getSyslogPort();
     json["mqtt"] = "192.168.32.2";
-    server.sendHeader("Access-Control-Allow-Origin", "*");
     String response;
     json.prettyPrintTo(response);
     server.send(200, "application/json", response);
   });
+
   server.on("/api/config", HTTP_OPTIONS, []() {
+    Serial.println("OPTIONS /api/config");
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("Access-Control-Allow-Credentials", "false");
     server.sendHeader("Access-Control-Allow-Headers", "X-Requested-With,Content-Type");
     server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     server.send(204);
   });
+
   server.on("/api/config", HTTP_POST, []() {
+    Serial.println("POST /api/config");
     StaticJsonBuffer<500> jsonBuffer;
     JsonObject& json = jsonBuffer.parse(server.arg("plain"));
+
     String data;
     json.prettyPrintTo(Serial);
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "text/plain", "OK");
+
+    config.setWifiSsid(String(json["ssid"].as<char *>()));
+    config.setWifiPassword(String(json["passwd"].as<char *>()));
+    config.setLocalIP(String(json["ip"].as<char *>()));
+    config.setNetmask(String(json["netmask"].as<char *>()));
+    config.setGatewayIP(String(json["gateway"].as<char *>()));
+    config.setDNSServerIP(String(json["dns"].as<char *>()));
+    config.setSyslogHost(String(json["syslogh"].as<char *>()));
+    uint16 port = atoi(json["syslogp"]);
+    config.setSyslogPort(port);
+    config.setMqttHost(String(json["mqtt"].as<char *>()));
+
+    if (network.connectWiFi()) {
+      config.save();
+      server.send(200, "text/plain", "Connected and settings saved");
+    } else {
+      server.send(500, "text/plain", "Cannot connect to wifi - settings not saved");
+    }
   });
+
+  server.on("/api/connected", HTTP_GET, []() {
+    server.send(200, "text/plain", WiFi.isConnected() ? "Connected" : "Not connected");
+  });
+
   server.on("/api/heap", HTTP_GET, []() {
+    Serial.println("GET /api/heap");
     server.send(200, "text/plain", String(ESP.getFreeHeap()));
   });
+
   server.on("/api/test", HTTP_GET, []() {
+    Serial.println("GET /api/test");
     server.send(200, "text/plain", "test = " + server.arg("test") + "\n");
   });
 
