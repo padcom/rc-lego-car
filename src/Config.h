@@ -3,38 +3,31 @@
 
 #include <IPAddress.h>
 
+struct Option;
+
 class Config {
   public:
     Config(String appName);
-    void begin();
+    void addOption(String name, String value, int length);
+    void load();
     void save();
-    void purge();
     void reset();
+    void parse(String data);
+    String serialize();
+
     String getAppName();
     String getHardwareId();
-    String getWifiSsid();
-    void setWifiSsid(String ssid);
-    String getWifiPassword();
-    void setWifiPassword(String password);
-    IPAddress getAPLocalIP();
-    IPAddress getAPNetmask();
-    IPAddress getAPGatewayIP();
-    IPAddress getLocalIP();
-    void setLocalIP(String ip);
-    IPAddress getNetmask();
-    void setNetmask(String netmask);
-    IPAddress getGatewayIP();
-    void setGatewayIP(String ip);
-    IPAddress getDNSServerIP();
-    void setDNSServerIP(String ip);
-    IPAddress getMqttHost();
-    void setMqttHost(String host);
-    IPAddress getSyslogHost();
-    void setSyslogHost(String host);
-    uint16 getSyslogPort();
-    void setSyslogPort(uint16 port);
+    String getString(String name, String def = "");
+    void setString(String name, String value);
+    uint16 getPort(String name, uint16 def = 0);
+    void setPort(String name, uint16 value);
+    IPAddress getIpAddress(String name);
+    void setIpAddress(String name, IPAddress value);
   private:
     String appName;
+    Option* options = 0;
+    Option* get(String name);
+    size_t size();
 };
 
 #endif

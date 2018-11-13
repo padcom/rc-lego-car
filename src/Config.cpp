@@ -1,58 +1,97 @@
 #include <Arduino.h>
-#include <IPAddress.h>
 #include <EEPROM.h>
+#include <IPAddress.h>
 #include "Config.h"
 #include "SysLog.h"
 
-#define IP_MAX_LENGTH           15
-#define HOSTNAME_MAX_LENGTH     40
-#define PORT_MAX_LENGTH          5
-#define SECONDS_MAX_LENGTH       3
-
-// Data structure holding configuration options in EEPROM
-struct {
-  char ssid[32];
-  char password[32];
-  char localIP[IP_MAX_LENGTH + 1];
-  char netmask[IP_MAX_LENGTH + 1];
-  char gatewayIP[IP_MAX_LENGTH + 1];
-  char dnsServerIP[IP_MAX_LENGTH + 1];
-  char mqttHost[HOSTNAME_MAX_LENGTH + 1];
-  char syslogHost[HOSTNAME_MAX_LENGTH + 1];
-  char syslogPort[PORT_MAX_LENGTH + 1];
-} data;
-
-void readDataFromEEPROM() {
-  EEPROM.begin(sizeof(data));
-  EEPROM.get(0, data);
-}
-
-void saveDataToEEPROM() {
-  EEPROM.put(0, data);
-  EEPROM.commit();
-}
+struct Option {
+  String name;
+  String value;
+  int length;
+  Option *next = 0;
+};
 
 Config::Config(String appName) {
   this->appName = appName;
 }
 
-void Config::begin() {
-  readDataFromEEPROM();
-  if (data.localIP[0] == 255) purge();
+void Config::addOption(String name, String value, int length) {
+  Option* option = new Option;
+  option->name = name;
+  option->value = value;
+  option->length = length;
+  option->next = 0;
+
+  Option* opts = options;
+  if (opts) {
+    while (opts->next) opts = opts->next;
+    opts->next = option;
+  } else {
+    options = option;
+  }
+}
+
+void Config::load() {
+  Option* opts = options;
+  int address = 0;
+  while (opts) {
+    char buffer[opts->length];
+    for (int j = 0; j < opts->length; j++) {
+      buffer[j] = EEPROM.read(address + j);
+    }
+    opts->value = String(buffer);
+    address += opts->length;
+    opts = opts->next;
+  }
 }
 
 void Config::save() {
   SysLog.log("CONFIG Saving edited values");
-  saveDataToEEPROM();
-}
-
-void Config::purge() {
-  SysLog.log("CONFIG Resetting to factory defaults");
-  memset(&data, 0, sizeof data);
+  Option* opts = options;
+  int address = 0;
+  while (opts) {
+    for (int j = 0; j < opts->length; j++) {
+      EEPROM.write(address + j, opts->value.charAt(j));
+    }
+    address += opts->length;
+    opts = opts->next;
+  }
+  EEPROM.commit();
 }
 
 void Config::reset() {
   SysLog.log("CONFIG Resetting to default values");
+  Option* opts = options;
+  while (opts) {
+    opts->value = "";
+    opts = opts->next;
+  }
+}
+
+void Config::parse(String data) {
+  while (data.length() > 2) {
+    int index = data.indexOf("\n");
+    index = index == -1 ? data.length() : index;
+    String option = data.substring(0, index);
+    data.remove(0, index + 1);
+    index = option.indexOf("=");
+    if (index >= 1) {
+      String name = option.substring(0, index);
+      String value = option.substring(index + 1, option.length());
+      setString(name, value);
+    }
+  }
+}
+
+String Config::serialize() {
+  String result = "";
+  Option* opt = options;
+  while (opt) {
+    String entry = opt->name + "=" + opt->value + "\n";
+    result += entry;
+    opt = opt->next;
+  }
+  return result;
 }
 
 String Config::getAppName() {
@@ -63,107 +102,53 @@ String Config::getHardwareId() {
   return appName + "-" + String(ESP.getChipId());
 }
 
-String Config::getWifiSsid() {
-  return String(data.ssid);
+String Config::getString(String name, String def) {
+  Option* option = get(name);
+  return option == 0 ? def : option->value;
 }
 
-void Config::setWifiSsid(String ssid) {
-  memset(data.ssid, 0, sizeof(data.ssid));
-  memcpy(data.ssid, ssid.c_str(), ssid.length());
+void Config::setString(String name, String value) {
+  Option* option = get(name);
+  if (option) option->value = value;
 }
 
-String Config::getWifiPassword() {
-  return String(data.password);
+uint16 Config::getPort(String name, uint16 def) {
+  Option* option = get(name);
+  return option == 0 ? def : atoi(option->value.c_str());
 }
 
-void Config::setWifiPassword(String password) {
-  memset(data.password, 0, sizeof(data.password));
-  memcpy(data.password, password.c_str(), password.length());
+void Config::setPort(String name, uint16 value) {
+  Option* option = get(name);
+  if (option) option->value = String(value);
 }
 
-IPAddress strtoip(String ip) {
-  IPAddress result;
-  result.fromString(ip);
-  return result;
+IPAddress Config::getIpAddress(String name) {
+  Option* option = get(name);
+  IPAddress ip;
+  if (option) ip.fromString(option->value);
+  return ip;
 }
 
-IPAddress strtoip(char *ip) {
-  IPAddress result;
-  result.fromString(ip);
-  return result;
+void Config::setIpAddress(String name, IPAddress value) {
+  Option* option = get(name);
+  if (option) option->value = value.toString();
 }
 
-IPAddress Config::getAPLocalIP() {
-  return strtoip(String("192.168.4.1"));
+Option* Config::get(String name) {
+  Option* opts = options;
+  while (opts) {
+    if (opts->name.compareTo(name) == 0) return opts;
+    opts = opts->next;
+  }
+  return 0;
 }
 
-IPAddress Config::getAPNetmask() {
-  return strtoip(String("255.255.255.0"));
-}
-
-IPAddress Config::getAPGatewayIP() {
-  return strtoip(String("192.168.4.1"));
-}
-
-IPAddress Config::getLocalIP() {
-  return strtoip(data.localIP);
-}
-
-void Config::setLocalIP(String ip) {
-  memset(data.localIP, 0, sizeof(data.localIP));
-  memcpy(data.localIP, ip.c_str(), ip.length());
-}
-
-IPAddress Config::getNetmask() {
-  return strtoip(data.netmask);
-}
-
-void Config::setNetmask(String netmask) {
-  memset(data.netmask, 0, sizeof(data.netmask));
-  memcpy(data.netmask, netmask.c_str(), netmask.length());
-}
-
-IPAddress Config::getGatewayIP() {
-  return strtoip(data.gatewayIP);
-}
-
-void Config::setGatewayIP(String ip) {
-  memset(data.gatewayIP, 0, sizeof(data.gatewayIP));
-  memcpy(data.gatewayIP, ip.c_str(), ip.length());
-}
-
-IPAddress Config::getDNSServerIP() {
-  return strtoip(String("8.8.8.8"));
-}
-
-void Config::setDNSServerIP(String ip) {
-  memset(data.dnsServerIP, 0, sizeof(data.dnsServerIP));
-  memcpy(data.dnsServerIP, ip.c_str(), ip.length());
-}
-
-IPAddress Config::getMqttHost() {
-  return strtoip(data.mqttHost);
-}
-
-void Config::setMqttHost(String host) {
-  memset(data.mqttHost, 0, sizeof(data.mqttHost));
-  memcpy(data.mqttHost, host.c_str(), host.length());
-}
-
-IPAddress Config::getSyslogHost() {
-  return strtoip(data.syslogHost);
-}
-
-void Config::setSyslogHost(String host) {
-  memset(data.syslogHost, 0, sizeof(data.syslogHost));
-  memcpy(data.syslogHost, host.c_str(), host.length());
-}
-
-uint16 Config::getSyslogPort() {
-  return atoi(data.syslogPort);
-}
-
-void Config::setSyslogPort(uint16 port) {
-  memset(data.syslogPort, 0, sizeof(data.syslogPort));
-  itoa(port, data.syslogPort, 0);
+size_t Config::size() {
+  Option* opts = options;
+  size_t size = 0;
+  while (opts) {
+    size += opts->length;
+    opts = opts->next;
+  }
+  return size;
 }

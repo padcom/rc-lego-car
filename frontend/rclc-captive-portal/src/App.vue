@@ -22,17 +22,26 @@ export default {
   },
   mounted () {
     fetch("/api/config")
-      .then(response => response.json())
-      .then(data => { this.config = data })
+      .then(response => response.text())
+      .then(data => {
+        this.config = data
+          .split("\n")
+          .map(entry => {
+            const idx = entry.indexOf('=')
+            return idx > 1 ? { [entry.substring(0, idx)]: entry.substring(idx + 1) } : {}
+          })
+          .reduce((acc, field) => Object.assign({}, acc, field ), {});
+      })
+      .then(() => console.log(this.config))
   },
   methods: {
     save () {
       this.status = "Saving values and connecting to wifi...";
       fetch("/api/config", {
         method: "POST",
-        body: JSON.stringify(this.config),
+        body: Object.keys(this.config).map(field => `${field}=${this.config[field]}`).join('\n'),
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/text",
         },
       })
       setTimeout(() => {
