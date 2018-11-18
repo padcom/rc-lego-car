@@ -1,14 +1,18 @@
 <template>
   <div id="app">
     <h1>RC Lego Car Configuration</h1>
-    <p v-for="field in Object.keys(config)" :key="field">
-      <label :for="field">{{ field }}</label>
-      <input :name="field" v-model="config[field]">
-    </p>
-    <p>
-      <button @click="save">Save</button>
-    </p>
-    <h3>{{ status }}</h3>
+    <div v-if="status == ''">
+      <p v-for="field in Object.keys(config)" :key="field">
+        <label :for="field">{{ field }}</label>
+        <input :name="field" v-model="config[field]">
+      </p>
+      <p>
+        <button @click="save">Save</button>
+      </p>
+    </div>
+    <div v-else>
+      <h4>Trying to connect to {{ config.ssid }}...</h4>
+    </div>
   </div>
 </template>
 
@@ -32,7 +36,6 @@ export default {
           })
           .reduce((acc, field) => Object.assign({}, acc, field ), {});
       })
-      .then(() => console.log(this.config))
   },
   methods: {
     save () {
@@ -44,11 +47,6 @@ export default {
           "Content-Type": "application/text",
         },
       })
-      setTimeout(() => {
-        fetch("/api/connected")
-          .then(response => response.text()) 
-          .then(status => { this.status = status });
-      }, 5000);
     }
   }
 }

@@ -62,11 +62,11 @@ void connect() {
 }
 
 void setup() {
-  EEPROM.begin(512);
-  SPIFFS.begin();
-
   Serial.begin(115200);
   Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
+
+  EEPROM.begin(512);
+  SPIFFS.begin();
 
   // Setup the configuration
   configure();
