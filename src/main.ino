@@ -64,7 +64,6 @@ void connect() {
 void setup() {
   EEPROM.begin(512);
   SPIFFS.begin();
-  SysLog.begin(config.ip("syslog-host"), config.port("syslog-port"), config.app(), config.hardwareId());
 
   Serial.begin(115200);
   Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
@@ -74,6 +73,9 @@ void setup() {
 
   // Manage network connection
   connect();
+
+  // Configure logging
+  SysLog.begin(config.ip("syslog-host"), config.port("syslog-port"), config.app(), config.hardwareId());
 
   // Default handlers
   server.serveStatic("/", SPIFFS, "/");
