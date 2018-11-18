@@ -58,7 +58,7 @@ void SysLogClient::logf(const uint16 level, const String &message, ...) {
 
 void SysLogClient::log(const uint16 facility, const uint16 level, const String &message) {
   if (!initialized) {
-    Serial.println(F("SYSLOG NOT INITIALIZED! Call begin() first."));
+    Serial.println(F("SYSLOG NOT INITIALIZED! Call SysLog.begin() first."));
     return;
   }
 

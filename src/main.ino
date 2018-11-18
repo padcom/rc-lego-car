@@ -1,66 +1,59 @@
+#include <FS.h>
+#include <EEPROM.h>
+#include <ESP8266WebServer.h>
 #include "Config.h"
+#include "ConfigManager.h"
 #include "Network.h"
 #include "SysLog.h"
 #include "Servo.h"
 #include "Button.h"
-#include <FS.h>
-#include <ESP8266WebServer.h>
-#include <DNSServer.h>
-#include <EEPROM.h>
 
 Config config("rclc");
 Network network;
-DNSServer dns;
 ESP8266WebServer server(80);
 
-void redirectToCaptivePortal() {
-  Serial.println("GET /hotspot-detect.html");
-  server.sendHeader("Location", String("/cp/"), true);
-  server.send(302, "text/plain", "Redirecting to captive portal");
+bool shouldStartConfigurationManager() {
+  Button cfg(D0);
+  return cfg.pressed();
 }
 
-void retrieveConfiguration() {
-  Serial.println("GET /api/config");
-  server.send(200, "application/text", config.serialize());
+String getConfig() {
+  return config.serialize();
 }
 
-void configureNetwork() {
-  network.configure(
-    config.getHardwareId(),
-    config.getString("ssid"),
-    config.getString("password"),
-    config.getIpAddress("ip"),
-    config.getIpAddress("netmask"),
-    config.getIpAddress("gateway"),
-    config.getIpAddress("dns"));
-}
-
-void uploadConfiguration() {
-  Serial.println("POST /api/config");
-  config.parse(server.arg("plain"));
-  configureNetwork();
-  if (network.connectWiFi()) {
+bool setConfig(String data) {
+  config.parse(data);
+  if (network.begin(config.string("ssid"), config.string("password"), config.ip("ip"), config.ip("netmask"), config.ip("gateway"), config.ip("dns"))) {
     config.save();
-    server.send(200, "text/plain", "Connected and settings saved");
+    return true;
   } else {
+    Serial.println("Settings NOT saved.");
     config.load();
-    configureNetwork();
-    network.connectWiFi();
-    server.send(500, "text/plain", "Cannot connect to wifi - settings not saved");
+    return false;
   }
 }
 
-void checkNetworkConnectivity() {
-  server.send(200, "text/plain", WiFi.isConnected() ? "Connected" : "Not connected");
-}
-
-void notFoundHandler() {
-  server.send(200, "text/plain", String(server.method()) + " " + server.uri() + " not found\n");
+void connect() {
+  if (shouldStartConfigurationManager()) {
+    Serial.println("Starting configuration manager at http://192.168.4.1/cp/");
+    ConfigManager.start(config.hardwareId(), IPAddress(192,168,4,1), getConfig, setConfig);
+  } else {
+    if (!network.begin(config.string("ssid"), config.string("password"), config.ip("ip"), config.ip("netmask"), config.ip("gateway"), config.ip("dns"))) {
+      Serial.println("Unable to connect to WiFi - please update configuration at http://192.168.4.1/cp/");
+      ConfigManager.start(config.hardwareId(), IPAddress(192,168,4,1), getConfig, setConfig);
+    } else {
+      Serial.println("WiFi connected. LocaIP: " + WiFi.localIP().toString());
+    }
+  }
 }
 
 void setup() {
   EEPROM.begin(512);
   SPIFFS.begin();
+  SysLog.begin(config.ip("syslog-host"), config.port("syslog-port"), config.app(), config.hardwareId());
+
+  Serial.begin(115200);
+  Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
 
   config.addOption("ssid", "", 32);
   config.addOption("password", "", 32);
@@ -74,30 +67,14 @@ void setup() {
   config.addOption("mqtt-port", "1883", 5);
   config.load();
 
-  SysLog.begin(
-    config.getIpAddress("syslog-host"), config.getPort("syslog-port"),
-    config.getAppName(), config.getHardwareId());
+  // Manage network connection
+  connect();
 
-  Serial.begin(115200);
-  Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
-
-  configureNetwork();
-  network.startAP();
-  network.connectWiFi();
-
-  // DNS server is needed so that captive portal knows it is not connected to the internet
-  dns.setErrorReplyCode(DNSReplyCode::NoError);
-  dns.start(53, "*", WiFi.softAPIP());
-
-  // handle captive portal to enable configuration over wifi
-  server.on("/hotspot-detect.html", HTTP_GET, redirectToCaptivePortal);
-  // API
-  server.on("/api/config", HTTP_GET, retrieveConfiguration);
-  server.on("/api/config", HTTP_POST, uploadConfiguration);
-  server.on("/api/connected", HTTP_GET, checkNetworkConnectivity);
   // Default handlers
   server.serveStatic("/", SPIFFS, "/");
-  server.onNotFound(notFoundHandler);
+  server.onNotFound([]() {
+    server.send(200, "text/plain", String(server.method()) + " " + server.uri() + " not found\n");
+  });
   // Start the web server
   server.begin();
 }

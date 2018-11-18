@@ -1,6 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <LinkedList.h>
 #include <IPAddress.h>
 
 struct Option;
@@ -15,19 +16,18 @@ class Config {
     void parse(String data);
     String serialize();
 
-    String getAppName();
-    String getHardwareId();
-    String getString(String name, String def = "");
-    void setString(String name, String value);
-    uint16 getPort(String name, uint16 def = 0);
-    void setPort(String name, uint16 value);
-    IPAddress getIpAddress(String name);
-    void setIpAddress(String name, IPAddress value);
+    String app();
+    String hardwareId();
+    String string(String name, String def = "");
+    uint16 port(String name, uint16 def = 0);
+    IPAddress ip(String name);
+    void set(String name, uint16 value);
+    void set(String name, String value);
+    void set(String name, IPAddress value);
   private:
     String appName;
-    Option* options = 0;
+    LinkedList<Option*> options;
     Option* get(String name);
-    size_t size();
 };
 
 #endif
