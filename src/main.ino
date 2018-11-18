@@ -12,6 +12,20 @@ Config config("rclc");
 Network network;
 ESP8266WebServer server(80);
 
+void configure() {
+  config.addOption("ssid", "", 32);
+  config.addOption("password", "", 32);
+  config.addOption("ip", "", 15);
+  config.addOption("netmask", "", 15);
+  config.addOption("gateway", "", 15);
+  config.addOption("dns", "8.8.8.8", 15);
+  config.addOption("syslog-host", "", 15);
+  config.addOption("syslog-port", "514", 5);
+  config.addOption("mqtt-host", "", 15);
+  config.addOption("mqtt-port", "1883", 5);
+  config.load();
+}
+
 bool shouldStartConfigurationManager() {
   Button cfg(D0);
   return cfg.pressed();
@@ -55,17 +69,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\nRemote Controlled Lego Car (RCLC) firmware 1.0");
 
-  config.addOption("ssid", "", 32);
-  config.addOption("password", "", 32);
-  config.addOption("ip", "", 15);
-  config.addOption("netmask", "", 15);
-  config.addOption("gateway", "", 15);
-  config.addOption("dns", "8.8.8.8", 15);
-  config.addOption("syslog-host", "", 15);
-  config.addOption("syslog-port", "514", 5);
-  config.addOption("mqtt-host", "", 15);
-  config.addOption("mqtt-port", "1883", 5);
-  config.load();
+  // Setup the configuration
+  configure();
 
   // Manage network connection
   connect();
