@@ -7,7 +7,6 @@
 ConfigMgr ConfigManager;
 
 void ConfigMgr::start(String hostname, IPAddress ip, String(*getConfig)(), bool(*setConfig)(String)) {
-  AccessPoint ap(hostname, ip);
   ESP8266WebServer web(80);
   DNSServer dns;
   bool done = false;
@@ -16,7 +15,7 @@ void ConfigMgr::start(String hostname, IPAddress ip, String(*getConfig)(), bool(
   SPIFFS.begin();
 
   // Start the access point of the captive portal
-  ap.start();
+  AccessPoint.start(hostname, ip);
 
   // DNS server is needed so that captive portal knows it is not connected to the internet
   dns.setErrorReplyCode(DNSReplyCode::NoError);
@@ -51,5 +50,5 @@ void ConfigMgr::start(String hostname, IPAddress ip, String(*getConfig)(), bool(
 
   web.stop();
   dns.stop();
-  ap.stop();
+  AccessPoint.stop();
 }

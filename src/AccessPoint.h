@@ -3,14 +3,12 @@
 
 #include <ESP8266WiFi.h>
 
-class AccessPoint {
+class AccessPointManager {
   public:
-    AccessPoint(String hostname, IPAddress ip);
-    void start();
+    void start(String hostname, IPAddress ip);
     void stop();
-  private:
-    String hostname;
-    IPAddress ip;
 };
+
+extern AccessPointManager AccessPoint;
 
 #endif
